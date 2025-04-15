@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
-import { auth } from "@/lib/firebase";
+import { createFirebaseClient } from "@/lib/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -16,9 +15,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const { toast } = useToast();
   const router = useRouter();
-
+  const { auth } = createFirebaseClient();
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -29,11 +27,7 @@ export default function Login() {
       }
       router.push("/dashboard");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error(error);
     }
   };
 

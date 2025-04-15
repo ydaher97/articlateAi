@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { createFirebaseClient } from '@/lib/firebase'; 
+import { createFirebaseClient } from '@/lib/firebase';
+import { cookies } from 'next/headers';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -25,7 +26,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Set auth cookie
+      document.cookie = 'auth=true; path=/; max-age=86400'; // 24 hours
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);

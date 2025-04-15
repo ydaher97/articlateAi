@@ -6,14 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createFirebaseClient } from '@/lib/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, limit, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { generateExercise, gradeSubmission } from '@/lib/ai';
+import { Difficulty, Category } from '@/components/exercise-settings';
 
 interface Exercise {
   id: string;
   prompt: string;
   date: Date;
+  difficulty: Difficulty;
+  category: Category;
 }
 
 export default function ExercisesPage() {
@@ -22,13 +25,30 @@ export default function ExercisesPage() {
   const [fiftyWordResponse, setFiftyWordResponse] = useState('');
   const [wordCount, setWordCount] = useState({ hundred: 0, fifty: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<{ difficulty: Difficulty; category: Category }>({
+    difficulty: 'intermediate',
+    category: 'general'
+  });
   const router = useRouter();
   const { firestore } = createFirebaseClient();
   const auth = getAuth();
 
   useEffect(() => {
-    fetchDailyExercise();
-  }, []);
+    // Get settings from localStorage
+    const savedSettings = localStorage.getItem('exerciseSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    } else {
+      // If no settings found, redirect to settings page
+      router.push('/exercise-settings');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (settings.difficulty && settings.category) {
+      fetchDailyExercise();
+    }
+  }, [settings]);
 
   const fetchDailyExercise = async () => {
     try {
@@ -39,6 +59,8 @@ export default function ExercisesPage() {
       const q = query(
         exercisesRef,
         where('date', '>=', today),
+        where('difficulty', '==', settings.difficulty),
+        where('category', '==', settings.category),
         limit(1)
       );
       
@@ -49,20 +71,26 @@ export default function ExercisesPage() {
         setCurrentExercise({
           id: exercise.id,
           prompt: exercise.data().prompt,
-          date: exercise.data().date.toDate()
+          date: exercise.data().date.toDate(),
+          difficulty: exercise.data().difficulty,
+          category: exercise.data().category
         });
       } else {
         // Generate new exercise if none exists for today
-        const newPrompt = await generateExercise();
+        const newPrompt = await generateExercise(settings.difficulty, settings.category);
         const newExercise = await addDoc(exercisesRef, {
           prompt: newPrompt,
-          date: new Date()
+          date: new Date(),
+          difficulty: settings.difficulty,
+          category: settings.category
         });
         
         setCurrentExercise({
           id: newExercise.id,
           prompt: newPrompt,
-          date: new Date()
+          date: new Date(),
+          difficulty: settings.difficulty,
+          category: settings.category
         });
       }
     } catch (error) {
@@ -92,14 +120,17 @@ export default function ExercisesPage() {
         hundredWordResponse,
         fiftyWordResponse,
         submittedAt: new Date(),
-        status: 'grading'
+        status: 'grading',
+        difficulty: currentExercise.difficulty,
+        category: currentExercise.category
       });
 
       // Get AI feedback
       const feedback = await gradeSubmission(
         currentExercise.prompt,
         hundredWordResponse,
-        fiftyWordResponse
+        fiftyWordResponse,
+        currentExercise.difficulty
       );
 
       // Update submission with feedback
@@ -131,6 +162,14 @@ export default function ExercisesPage() {
         <CardContent>
           {currentExercise ? (
             <>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-sm">
+                  {currentExercise.difficulty}
+                </span>
+                <span className="px-2 py-1 bg-secondary/10 text-secondary rounded-md text-sm">
+                  {currentExercise.category}
+                </span>
+              </div>
               <p className="text-lg mb-4">{currentExercise.prompt}</p>
               
               <div className="space-y-6">
@@ -166,12 +205,20 @@ export default function ExercisesPage() {
                   </p>
                 </div>
 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={wordCount.hundred !== 100 || wordCount.fifty !== 50 || isSubmitting}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit Exercise'}
-                </Button>
+                <div className="flex justify-between items-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/exercise-settings')}
+                  >
+                    Change Settings
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={wordCount.hundred !== 100 || wordCount.fifty !== 50 || isSubmitting}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Exercise'}
+                  </Button>
+                </div>
               </div>
             </>
           ) : (

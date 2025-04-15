@@ -11,15 +11,13 @@ import { createFirebaseClient } from '@/lib/firebase';
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
-  const [tasks, setTasks] = useState<{ id: string; task: any }[]>([]);
-  const [newTask, setNewTask] = useState('');
+ 
   const { auth, firestore } = createFirebaseClient();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        fetchTasks();
       } else {
         router.push('/auth/login'); 
       }
@@ -28,52 +26,20 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, [auth, router]);
 
-  const fetchTasks = async () => {
-    const tasksCollection = collection(firestore, 'tasks');
-    const taskSnapshot = await getDocs(tasksCollection);
-    const taskList = taskSnapshot.docs.map((doc) => ({
-      id: doc.id, 
-      task: doc.data().task, 
-      userId: doc.data().userId,
-    }));
-    console.log(taskList);
-    setTasks(taskList);
-  };
 
-  const handleAddTask = async () => {
-    if (!newTask.trim()) return;
 
-    try {
-      const tasksCollection = collection(firestore, 'tasks');
-      await addDoc(tasksCollection, {
-        task: newTask,
-        userId: user?.uid,
-        createdAt: new Date(),
-      });
-      setTasks((prev) => [...prev, { id: Date.now().toString(), task: newTask }]);
-      setNewTask('');
-    } catch (error) {
-      console.error('Error adding task:', error);
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-      console.log(taskId);
-      const taskDoc = doc(firestore, 'tasks', taskId);
-      await deleteDoc(taskDoc);
-      setTasks((prev) => prev.filter((task) => task.id !== taskId));
-    } catch (error) {
-      console.error('Error deleting task:', error);
-    }
-  };
-
+ 
   const handleSignOut = async () => {
-    await signOut(auth);
-    router.push('/auth/login');
+    try {
+      await signOut(auth);
+      // Clear auth cookie
+      document.cookie = 'auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
-  console.log(user);
 
   return (
     <div className="min-h-screen bg-background p-8">
