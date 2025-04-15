@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { createFirebaseClient } from '@/lib/firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 interface Submission {
@@ -41,16 +43,17 @@ export default function SubmissionsPage() {
       const submissionsRef = collection(firestore, 'submissions');
       const q = query(
         submissionsRef,
-        where('userId', '==', auth.currentUser?.uid),
-        orderBy('submittedAt', 'desc')
+        where('userId', '==', auth.currentUser?.uid)
       );
       
       const snapshot = await getDocs(q);
-      const submissionsList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        submittedAt: doc.data().submittedAt.toDate()
-      })) as Submission[];
+      const submissionsList = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          submittedAt: doc.data().submittedAt.toDate()
+        }))
+        .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()) as Submission[];
       
       setSubmissions(submissionsList);
     } catch (error) {
@@ -60,7 +63,18 @@ export default function SubmissionsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Your Submissions</h1>
+      <div className="flex items-center justify-between mb-6">
+        <Button
+          variant="outline"
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Button>
+        <h1 className="text-2xl font-bold">Your Submissions</h1>
+        <div className="w-[120px]"></div> {/* Spacer for alignment */}
+      </div>
       
       <div className="space-y-6">
         {submissions.map((submission) => (

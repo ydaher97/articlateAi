@@ -73,6 +73,8 @@ export default function DashboardPage() {
     router.push('/auth/login');
   };
 
+  console.log(user);
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-4xl mx-auto">
@@ -85,10 +87,10 @@ export default function DashboardPage() {
         </div>
 
         <div className="bg-card p-6 rounded-lg shadow-sm mb-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome!</h2>
-          <p className="text-muted-foreground">
-            You're signed in as: {user?.email}
-          </p>
+          <h2 className="text-xl font-semibold mb-4">Welcome! <span className="text-muted-foreground">
+             {user?.displayName}
+          </span></h2>
+          
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createFirebaseClient } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface Analytics {
   totalSubmissions: number;
@@ -100,7 +102,18 @@ export default function AnalyticsPage() {
 
   return (
     <div className="container mx-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+      <Button
+          variant="outline"
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Button>
       <h1 className="text-2xl font-bold mb-6">Your Progress</h1>
+      </div>
+      
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
